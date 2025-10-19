@@ -145,7 +145,7 @@ export default function Home() {
 
         {/* Category Toggles */}
         <motion.div 
-          className="mb-6 sm:mb-8 md:mb-12 w-full max-w-5xl"
+          className="mb-4 sm:mb-6 md:mb-8 w-full max-w-5xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -175,7 +175,7 @@ export default function Home() {
         </motion.div>
 
         {/* Main Card Area */}
-        <div className="mb-6 sm:mb-8 md:mb-12 w-full max-w-3xl perspective-1000 flex-1 flex items-center justify-center">
+        <div className="mb-4 sm:mb-6 md:mb-8 w-full max-w-3xl perspective-1000 flex-1 flex items-center justify-center">
           <AnimatePresence mode="wait">
             {currentCard && (
               <motion.div
@@ -221,7 +221,7 @@ export default function Home() {
 
         {/* Controls */}
         <motion.div 
-          className="flex gap-4 sm:gap-6 mt-auto"
+          className="flex gap-4 sm:gap-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
@@ -240,7 +240,7 @@ export default function Home() {
 
         {/* Footer */}
         <motion.div 
-          className="mt-4 sm:mt-6 md:mt-8 text-center text-gray-600 text-sm sm:text-base md:text-lg"
+          className="mt-3 sm:mt-4 md:mt-6 text-center text-gray-600 text-sm sm:text-base md:text-lg"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.6 }}
