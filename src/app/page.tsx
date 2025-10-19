@@ -9,6 +9,7 @@ interface Category {
   id: string;
   name: string;
   color: string;
+  gradient: string;
   prompts: string[];
 }
 
@@ -16,12 +17,14 @@ interface Card {
   text: string;
   category: string;
   categoryColor: string;
+  categoryGradient: string;
 }
 
 export default function Home() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['starter']);
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
-  const [backgroundGradient, setBackgroundGradient] = useState(0);
+  const [currentGradient, setCurrentGradient] = useState('from-blue-50 via-sky-50 to-blue-100');
+  const [cardKey, setCardKey] = useState(0);
 
   const categories: Category[] = cardsData.categories;
 
@@ -33,7 +36,7 @@ export default function Home() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           setSelectedCategories(parsed);
         }
-      } catch (e) {
+      } catch {
         console.error('Failed to parse saved categories');
       }
     }
@@ -50,7 +53,8 @@ export default function Home() {
         category.prompts.map(prompt => ({
           text: prompt,
           category: category.name,
-          categoryColor: category.color
+          categoryColor: category.color,
+          categoryGradient: category.gradient
         }))
       );
   };
@@ -62,13 +66,15 @@ export default function Home() {
     const randomIndex = Math.floor(Math.random() * availableCards.length);
     const newCard = availableCards[randomIndex];
     setCurrentCard(newCard);
-    setBackgroundGradient(prev => (prev + 1) % 5);
+    setCurrentGradient(newCard.categoryGradient);
+    setCardKey(prev => prev + 1);
   };
 
   useEffect(() => {
     if (selectedCategories.length > 0) {
       drawRandomCard();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategories]);
 
   const toggleCategory = (categoryId: string) => {
@@ -82,75 +88,131 @@ export default function Home() {
     });
   };
 
-  const gradients = [
-    'from-blue-50 to-indigo-100',
-    'from-purple-50 to-pink-100', 
-    'from-green-50 to-emerald-100',
-    'from-yellow-50 to-orange-100',
-    'from-rose-50 to-red-100'
-  ];
+  const cardVariants = {
+    initial: { 
+      opacity: 0, 
+      scale: 0.8, 
+      rotateY: -90,
+      filter: 'blur(10px)'
+    },
+    animate: { 
+      opacity: 1, 
+      scale: 1, 
+      rotateY: 0,
+      filter: 'blur(0px)'
+    },
+    exit: { 
+      opacity: 0, 
+      scale: 0.8, 
+      rotateY: 90,
+      filter: 'blur(10px)'
+    }
+  };
+
+  const cardTransition = {
+    duration: 0.6,
+    ease: [0.25, 0.46, 0.45, 0.94] as const,
+    opacity: { duration: 0.3 },
+    scale: { duration: 0.4 },
+    rotateY: { duration: 0.5 },
+    filter: { duration: 0.3 }
+  };
+
 
   return (
     <div className={clsx(
       'min-h-screen bg-gradient-to-br transition-all duration-1000 ease-in-out',
-      gradients[backgroundGradient]
+      currentGradient
     )}>
-      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-screen">
+      <div className="container mx-auto px-4 py-4 sm:py-6 md:py-8 flex flex-col items-center justify-center min-h-screen max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-4">
+        <motion.div 
+          className="text-center mb-6 sm:mb-8 md:mb-10"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-3 sm:mb-4 md:mb-6">
             Next Card
           </h1>
-          <p className="text-xl text-gray-600 mb-2">
+          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-700 mb-2 sm:mb-3 font-medium">
             Push the button. Start the conversation.
           </p>
-          <p className="text-lg text-gray-500">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600">
             A game for connection.
           </p>
-        </div>
+        </motion.div>
 
         {/* Category Toggles */}
-        <div className="mb-12 w-full max-w-4xl">
-          <div className="flex flex-wrap justify-center gap-3">
-            {categories.map(category => (
-              <button
+        <motion.div 
+          className="mb-6 sm:mb-8 md:mb-12 w-full max-w-5xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4">
+            {categories.map((category, index) => (
+              <motion.button
                 key={category.id}
                 onClick={() => toggleCategory(category.id)}
                 className={clsx(
-                  'px-4 py-2 rounded-full border-2 transition-all duration-200 font-medium',
+                  'px-3 py-2 sm:px-4 sm:py-2 md:px-6 md:py-3 rounded-full border-2 transition-all duration-300 font-semibold text-sm sm:text-base md:text-lg shadow-lg',
+                  'transform hover:scale-110 hover:shadow-xl active:scale-95',
                   selectedCategories.includes(category.id)
-                    ? category.color
-                    : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
+                    ? `${category.color} shadow-lg scale-105`
+                    : 'bg-white/90 backdrop-blur-sm border-gray-300 text-gray-700 hover:border-gray-500 hover:bg-white'
                 )}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
               >
                 {category.name}
-              </button>
+              </motion.button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Main Card Area */}
-        <div className="mb-12 w-full max-w-2xl">
+        <div className="mb-6 sm:mb-8 md:mb-12 w-full max-w-3xl perspective-1000 flex-1 flex items-center justify-center">
           <AnimatePresence mode="wait">
             {currentCard && (
               <motion.div
-                key={currentCard.text}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200"
+                key={cardKey}
+                variants={cardVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={cardTransition}
+                className="bg-white/95 backdrop-blur-lg rounded-2xl md:rounded-3xl shadow-2xl p-6 sm:p-8 md:p-12 lg:p-16 border border-white/20 relative overflow-hidden w-full"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255,255,255,0.05)'
+                }}
               >
-                <div className="text-center">
-                  <div className={clsx(
-                    'inline-block px-3 py-1 rounded-full text-sm font-medium mb-6',
-                    currentCard.categoryColor
-                  )}>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+                <div className="text-center relative z-10">
+                  <motion.div 
+                    className={clsx(
+                      'inline-block px-5 py-2 rounded-full text-base font-bold mb-8 shadow-md',
+                      currentCard.categoryColor
+                    )}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.4, delay: 0.3 }}
+                  >
                     {currentCard.category}
-                  </div>
-                  <p className="text-2xl md:text-3xl font-medium text-gray-800 leading-relaxed">
+                  </motion.div>
+                  <motion.p 
+                    className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 leading-relaxed tracking-tight"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                    style={{ fontFamily: '"Inter", "system-ui", sans-serif' }}
+                  >
                     {currentCard.text}
-                  </p>
+                  </motion.p>
                 </div>
               </motion.div>
             )}
@@ -158,20 +220,33 @@ export default function Home() {
         </div>
 
         {/* Controls */}
-        <div className="flex gap-4">
-          <button
+        <motion.div 
+          className="flex gap-4 sm:gap-6 mt-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <motion.button
             onClick={drawRandomCard}
             disabled={selectedCategories.length === 0}
-            className="bg-gray-800 hover:bg-gray-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-full font-semibold text-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+            className="bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 disabled:from-gray-400 disabled:to-gray-400 text-white px-8 py-3 sm:px-10 sm:py-4 md:px-12 md:py-5 rounded-full font-bold text-lg sm:text-xl transition-all duration-300 shadow-2xl hover:shadow-3xl relative overflow-hidden"
+            whileHover={{ scale: 1.05, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+            whileTap={{ scale: 0.95 }}
           >
-            Next Card
-          </button>
-        </div>
+            <span className="relative z-10">Next Card</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
+          </motion.button>
+        </motion.div>
 
         {/* Footer */}
-        <div className="mt-16 text-center text-gray-500 text-sm">
-          <p>No accounts. No clutter. Just conversation.</p>
-        </div>
+        <motion.div 
+          className="mt-4 sm:mt-6 md:mt-8 text-center text-gray-600 text-sm sm:text-base md:text-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        >
+          <p className="font-medium">No accounts. No clutter. Just conversation.</p>
+        </motion.div>
       </div>
     </div>
   );
