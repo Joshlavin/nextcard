@@ -1,103 +1,178 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import clsx from 'clsx';
+import cardsData from '@/data/cards.json';
+
+interface Category {
+  id: string;
+  name: string;
+  color: string;
+  prompts: string[];
+}
+
+interface Card {
+  text: string;
+  category: string;
+  categoryColor: string;
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['starter']);
+  const [currentCard, setCurrentCard] = useState<Card | null>(null);
+  const [backgroundGradient, setBackgroundGradient] = useState(0);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const categories: Category[] = cardsData.categories;
+
+  useEffect(() => {
+    const saved = localStorage.getItem('nextcard-categories');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSelectedCategories(parsed);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved categories');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('nextcard-categories', JSON.stringify(selectedCategories));
+  }, [selectedCategories]);
+
+  const getAvailableCards = (): Card[] => {
+    return categories
+      .filter(category => selectedCategories.includes(category.id))
+      .flatMap(category => 
+        category.prompts.map(prompt => ({
+          text: prompt,
+          category: category.name,
+          categoryColor: category.color
+        }))
+      );
+  };
+
+  const drawRandomCard = () => {
+    const availableCards = getAvailableCards();
+    if (availableCards.length === 0) return;
+    
+    const randomIndex = Math.floor(Math.random() * availableCards.length);
+    const newCard = availableCards[randomIndex];
+    setCurrentCard(newCard);
+    setBackgroundGradient(prev => (prev + 1) % 5);
+  };
+
+  useEffect(() => {
+    if (selectedCategories.length > 0) {
+      drawRandomCard();
+    }
+  }, [selectedCategories]);
+
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(categoryId)) {
+        const newCategories = prev.filter(id => id !== categoryId);
+        return newCategories.length > 0 ? newCategories : ['starter'];
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  };
+
+  const gradients = [
+    'from-blue-50 to-indigo-100',
+    'from-purple-50 to-pink-100', 
+    'from-green-50 to-emerald-100',
+    'from-yellow-50 to-orange-100',
+    'from-rose-50 to-red-100'
+  ];
+
+  return (
+    <div className={clsx(
+      'min-h-screen bg-gradient-to-br transition-all duration-1000 ease-in-out',
+      gradients[backgroundGradient]
+    )}>
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-screen">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-4">
+            Next Card
+          </h1>
+          <p className="text-xl text-gray-600 mb-2">
+            Push the button. Start the conversation.
+          </p>
+          <p className="text-lg text-gray-500">
+            A game for connection.
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Category Toggles */}
+        <div className="mb-12 w-full max-w-4xl">
+          <div className="flex flex-wrap justify-center gap-3">
+            {categories.map(category => (
+              <button
+                key={category.id}
+                onClick={() => toggleCategory(category.id)}
+                className={clsx(
+                  'px-4 py-2 rounded-full border-2 transition-all duration-200 font-medium',
+                  selectedCategories.includes(category.id)
+                    ? category.color
+                    : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
+                )}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Card Area */}
+        <div className="mb-12 w-full max-w-2xl">
+          <AnimatePresence mode="wait">
+            {currentCard && (
+              <motion.div
+                key={currentCard.text}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200"
+              >
+                <div className="text-center">
+                  <div className={clsx(
+                    'inline-block px-3 py-1 rounded-full text-sm font-medium mb-6',
+                    currentCard.categoryColor
+                  )}>
+                    {currentCard.category}
+                  </div>
+                  <p className="text-2xl md:text-3xl font-medium text-gray-800 leading-relaxed">
+                    {currentCard.text}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Controls */}
+        <div className="flex gap-4">
+          <button
+            onClick={drawRandomCard}
+            disabled={selectedCategories.length === 0}
+            className="bg-gray-800 hover:bg-gray-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-full font-semibold text-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          >
+            Next Card
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-16 text-center text-gray-500 text-sm">
+          <p>No accounts. No clutter. Just conversation.</p>
+        </div>
+      </div>
     </div>
   );
 }
